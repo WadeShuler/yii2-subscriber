@@ -72,6 +72,16 @@ class Module extends BaseModule implements BootstrapInterface
     public $emailAutoPurge = false;
 
     /**
+     * @var string Full path to the HTML email template. Yii2 aliases supported.
+     */
+    public $emailTemplate;
+
+    /**
+     * @var string Your root domain URL for replacements (ie: https://example.com)
+     */
+    public $domainUrl;
+
+    /**
      * {@inheritdoc}
      */
     public function init()
@@ -170,7 +180,15 @@ class Module extends BaseModule implements BootstrapInterface
         $to = $subscriber->phone_number;
         $message = $campaign->message;
 
-        // @todo String replacements here...
+        $domainUrl = ( isset($this->domainUrl) && ! empty($this->domainUrl) ) ? $this->domainUrl : '';
+        $name = ( isset($subscriber->name) && ! empty($subscriber->name) ) ? $subscriber->name : '';
+        $userId = ( isset($subscriber->id) && ! empty($subscriber->id) ) ? (string) $subscriber->id : '';
+        $email = ( isset($subscriber->email_address) && ! empty($subscriber->email_address) ) ? $subscriber->email_address : '';
+
+        $message = str_replace('-domainUrl-', $domainUrl, $message);
+        $message = str_replace('-name-', $name, $message);
+        $message = str_replace('-userId-', $userId, $message);
+        $message = str_replace('-email-', $email, $message);
 
         return Yii::$app->sms->compose()
             ->setTo('+1' . $to)
@@ -182,14 +200,41 @@ class Module extends BaseModule implements BootstrapInterface
     {
         $to = $subscriber->email_address;
         $subject = $campaign->subject;
+        $pretext = ( isset($campaign->pretext) && ! empty($campaign->pretext) ) ? $campaign->pretext : '';
+        $domainUrl = ( isset($this->domainUrl) && ! empty($this->domainUrl) ) ? $this->domainUrl : '';
+        $name = ( isset($subscriber->name) && ! empty($subscriber->name) ) ? $subscriber->name : '';
+        $userId = ( isset($subscriber->id) && ! empty($subscriber->id) ) ? (string) $subscriber->id : '';
+        $email = ( isset($subscriber->email_address) && ! empty($subscriber->email_address) ) ? $subscriber->email_address : '';
         $message = $campaign->message;
 
-        // @todo String replacements here...
+        $html = '';
+
+        if ( isset($this->emailTemplate) && ! empty($this->emailTemplate) )
+        {
+            $templateFile = Yii::getAlias($this->emailTemplate);
+
+            if ( file_exists($templateFile) )
+            {
+                $html = file_get_contents($templateFile);
+                $html = str_replace('-message-', $message, $html);
+            }
+
+        } else {
+
+            $html = $message;
+
+        }
+
+        $html = str_replace('-pretext-', $pretext, $html);
+        $html = str_replace('-domainUrl-', $domainUrl, $html);
+        $html = str_replace('-name-', $name, $html);
+        $html = str_replace('-userId-', $userId, $html);
+        $html = str_replace('-email-', $email, $html);
 
         return Yii::$app->mailer->compose()
             ->setTo($to)
             ->setSubject($subject)
-            ->setHtmlBody($message)
+            ->setHtmlBody($html)
             ->send();
     }
 
