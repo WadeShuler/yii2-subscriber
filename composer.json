@@ -1,0 +1,26 @@
+{
+    "name": "wadeshuler/yii2-subscriber",
+    "description": "Yii2 subscriber module for sms and email campaigns using queues.",
+    "keywords": ["yii2", "subscriber", "campaign", "sms", "email", "queue"],
+    "homepage": "https://github.com/wadeshuler/yii2-subscriber",
+    "type": "yii2-extension",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Wade Shuler",
+            "email": "wadeshuler@users.noreply.github.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=5.4.0",
+        "yiisoft/yii2": "~2.0.6",
+        "wadeshuler/yii2-ckeditor-cdn": "~1.0",
+        "ruskid/yii2-csv-importer": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "wadeshuler\\subscriber\\": ""
+        }
+    }
+}
