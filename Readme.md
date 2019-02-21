@@ -64,13 +64,18 @@ The preferred way to install this extension is through [composer](http://getcomp
 
 Either run
 
+    composer require --prefer-dist ruskid/yii2-csv-importer "dev-master"
     composer require --prefer-dist wadeshuler/yii2-subscriber
 
 or add
 
+    "ruskid/yii2-csv-importer": "dev-master",
     "wadeshuler/yii2-subscriber": "~1.0"
 
 to the require section of your application's `composer.json` file.
+
+Unfortunately, we have to install the `ruskid/yii2-csv-importer` first and separetely because he hasn't
+created a release, and it is `dev-master`. If he doesn't create a release, I may swap this out in the future.
 
 
 Add to `backend/config/main.php` (advanced), `config/web.php` (basic):
