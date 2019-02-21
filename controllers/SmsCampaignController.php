@@ -86,23 +86,62 @@ class SmsCampaignController extends Controller
     {
         $model = new SmsCampaign();
 
-        if ($model->load(Yii::$app->request->post()) && $model->save())
+        if ($model->load(Yii::$app->request->post()) )
         {
-            $campaignId = $model->id;
 
-            foreach (Subscriber::find()->select(['id'])->where(['>=', 'id', 0])->andWhere(['sms_unsubscribed' => 0, 'sms_bounced' => 0])->andWhere(['not', ['phone_number' => null]])->orderBy(['id' => SORT_ASC])->batch(250) as $subscribers)
+            if ( isset($model->testNumber) && ! empty($model->testNumber) )
             {
-                $this->queue($campaignId, $subscribers);
+
+                if ( $result = $this->sendTestSms($model->testNumber, $model->message) ) {
+                    Yii::$app->session->setFlash('success', 'Your test message has been sent!');
+                    $model->testNumber = null;
+                } else {
+                    Yii::$app->session->setFlash('error', 'There was an error sending your test message!');
+                }
+
+            } else {
+
+                if ( $model->save() )
+                {
+                    $campaignId = $model->id;
+
+                    foreach (Subscriber::find()->select(['id'])->where(['>=', 'id', 0])->andWhere(['sms_unsubscribed' => 0, 'sms_bounced' => 0])->andWhere(['not', ['phone_number' => null]])->orderBy(['id' => SORT_ASC])->batch(250) as $subscribers)
+                    {
+                        $this->queue($campaignId, $subscribers);
+                    }
+
+                    Yii::$app->session->setFlash('success', 'Your message has been queued!');
+
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
+
             }
 
-            Yii::$app->session->setFlash('success', 'Your message has been queued!');
-
-            return $this->redirect(['view', 'id' => $model->id]);
         }
 
         return $this->render('create', [
             'model' => $model,
         ]);
+    }
+
+    private function sendTestSms($number, $message)
+    {
+        $module = Yii::$app->getModule('subscriber');
+
+        $domainUrl = ( isset($module->domainUrl) && ! empty($module->domainUrl) ) ? $module->domainUrl : '';
+        $name = 'Joe Tester';
+        $userId = '0';
+        $email = 'joetester@example.com';
+
+        $message = str_replace('-domainUrl-', $domainUrl, $message);
+        $message = str_replace('-name-', $name, $message);
+        $message = str_replace('-userId-', $userId, $message);
+        $message = str_replace('-email-', $email, $message);
+
+        return Yii::$app->sms->compose()
+            ->setTo('+1' . $number)
+            ->setMessage($message)
+            ->send();
     }
 
     /**

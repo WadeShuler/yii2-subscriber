@@ -86,28 +86,89 @@ class EmailCampaignController extends Controller
     {
         $model = new EmailCampaign();
 
-        if ($model->load(Yii::$app->request->post()) && $model->save())
+        if ($model->load(Yii::$app->request->post()) )
         {
-            $campaignId = $model->id;
-
-            if ( $batchId = $this->createBatchId() ) {
-                $model->batch_id = $batchId;
-                $model->update();
-            }
-
-            foreach (Subscriber::find()->select(['id'])->where(['>=', 'id', 0])->andWhere(['email_marked_spam' => 0, 'email_unsubscribed' => 0, 'email_bounced' => 0])->andWhere(['not', ['email_address' => null]])->orderBy(['id' => SORT_ASC])->batch(250) as $subscribers)
+            if ( isset($model->testEmail) && ! empty($model->testEmail) )
             {
-                $this->queue($campaignId, $subscribers);
+
+                if ( $result = $this->sendTestEmail($model->testEmail, $model->subject, $model->message, $model->pretext) ) {
+                    Yii::$app->session->setFlash('success', 'Your test message has been sent!');
+                    $model->testEmail = null;
+                } else {
+                    Yii::$app->session->setFlash('error', 'There was an error sending your test message!');
+                }
+
+            } else {
+
+                if ( $model->save() )
+                {
+                    $campaignId = $model->id;
+
+                    if ( $batchId = $this->createBatchId() ) {
+                        $model->batch_id = $batchId;
+                        $model->update();
+                    }
+
+                    foreach (Subscriber::find()->select(['id'])->where(['>=', 'id', 0])->andWhere(['email_marked_spam' => 0, 'email_unsubscribed' => 0, 'email_bounced' => 0])->andWhere(['not', ['email_address' => null]])->orderBy(['id' => SORT_ASC])->batch(250) as $subscribers)
+                    {
+                        $this->queue($campaignId, $subscribers);
+                    }
+
+                    Yii::$app->session->setFlash('success', 'Your message has been queued!');
+
+                    return $this->redirect(['view', 'id' => $model->id]);
+                }
+
             }
 
-            Yii::$app->session->setFlash('success', 'Your message has been queued!');
-
-            return $this->redirect(['view', 'id' => $model->id]);
         }
 
         return $this->render('create', [
             'model' => $model,
         ]);
+    }
+
+    private function sendTestEmail($email, $subject, $message, $pretext = null)
+    {
+        $to = $email;
+        $subject = $subject;
+        $pretext = ( isset($pretext) && ! empty($pretext) ) ? $pretext : '';
+
+        $module = Yii::$app->getModule('subscriber');
+
+        $domainUrl = ( isset($module->domainUrl) && ! empty($module->domainUrl) ) ? $module->domainUrl : '';
+        $name = 'Joe Tester';
+        $userId = '0';
+
+        $html = '';
+
+        if ( isset($module->emailTemplate) && ! empty($module->emailTemplate) )
+        {
+            $templateFile = Yii::getAlias($module->emailTemplate);
+
+            if ( file_exists($templateFile) )
+            {
+                $html = file_get_contents($templateFile);
+                $html = str_replace('-message-', $message, $html);
+            }
+
+        } else {
+
+            $html = $message;
+
+        }
+
+        $html = str_replace('-pretext-', $pretext, $html);
+        $html = str_replace('-domainUrl-', $domainUrl, $html);
+        $html = str_replace('-name-', $name, $html);
+        $html = str_replace('-userId-', $userId, $html);
+        $html = str_replace('-email-', $email, $html);
+
+        return Yii::$app->mailer->compose()
+            ->setTo($to)
+            ->setSubject($subject)
+            ->setHtmlBody($html)
+            ->send();
     }
 
     private function createBatchId()
