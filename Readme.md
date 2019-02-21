@@ -101,6 +101,8 @@ Add to `console/config/main.php` (advanced), `config/console.php` (basic):
         'class' => 'wadeshuler\subscriber\Module',
         'emailBatchSize' => 250,
         'smsBatchSize' => 250,
+        'emailTemplate' => '@common/mail/templates/new.tpl',    // optional: must create yourself
+        'domainUrl' => 'https://example.com',                   // optional: good for setting root url for links/images
     ],
 ],
 ```
@@ -122,6 +124,22 @@ You can test the cron processing, or manually run it, via:
 Create a new cron job that runs as often as you want to process the queue. I recommend every 5 minutes.
 
     /path/to/yii subscriber/cron/run
+
+
+### Replacements
+
+The following tags will be replaced with available info:
+
+    -domainUrl-
+    -name-
+    -userId-
+    -email-
+
+There also is a `-pretext-` tag for email templates only. This is so you can set the first/invisible pretext line
+of your HTML email for control of what shows first in the user's email client. *Note:* Your email template will have to be
+properly created to work properly. Read here for more info: https://litmus.com/blog/the-ultimate-guide-to-preview-text-support
+
+To use `-domainUrl-`, it must be configured in your app's config (as shown above). It should be the root path to your site, used for all of your links. This is useful for creating your unsubscribe link, inserting images, etc. It is optional.
 
 
 ### Routes
