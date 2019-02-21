@@ -88,6 +88,8 @@ Add to `backend/config/main.php` (advanced), `config/web.php` (basic):
     ],
     'subscriber' => [
         'class' => 'wadeshuler\subscriber\Module',
+        'emailTemplate' => '@common/mail/templates/new.tpl',    // optional: must create yourself
+        'domainUrl' => 'https://example.com',                   // optional: good for setting root url for links/images
     ],
 ],
 ```
