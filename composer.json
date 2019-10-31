@@ -16,7 +16,7 @@
         "php": ">=5.4.0",
         "yiisoft/yii2": "~2.0.6",
         "wadeshuler/yii2-ckeditor-cdn": "~1.0",
-        "ruskid/yii2-csv-importer": "dev-master"
+        "ruskid/yii2-csv-importer": "~1.0"
     },
     "autoload": {
         "psr-4": {
